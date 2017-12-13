@@ -28,9 +28,10 @@ except:
 # TEST_INDEX='test_words_index.txt'
 SOURCE_URL = 'http://pannous.net/files/' #spoken_numbers.tar'
 DATA_DIR = 'data/'
+direction_path= "data/dataset/"
 pcm_path = "data/spoken_numbers_pcm/" # 8 bit
 wav_path = "data/spoken_numbers_wav/" # 16 bit s16le
-path = pcm_path
+path = direction_path
 CHUNK = 4096
 test_fraction=0.1 # 10% of data for test / verification
 
@@ -153,7 +154,7 @@ def spectro_batch(batch_size=10):
 def speaker(filename):  # vom Dateinamen
 	# if not "_" in file:
 	#   return "Unknown"
-	return filename.split("_")[1]
+	return filename.split("_")[0]
 
 def get_speakers(path=pcm_path):
 	maybe_download(Source.DIGIT_SPECTROS)
@@ -228,8 +229,8 @@ def spectro_batch_generator(batch_size=10,width=64,source_data=Source.DIGIT_SPEC
 				labels = []
 
 def mfcc_batch_generator(batch_size=10, source=Source.DIGIT_WAVES, target=Target.digits):
-	maybe_download(source, DATA_DIR) # https://10.10.54.4:444/
-	if target == Target.speaker: speakers = get_speakers()
+	#maybe_download(source, DATA_DIR) # https://10.10.54.4:444/
+	direction = ['go','left','right','stop']
 	batch_features = []
 	labels = []
 	files = os.listdir(path)
@@ -240,16 +241,11 @@ def mfcc_batch_generator(batch_size=10, source=Source.DIGIT_WAVES, target=Target
 			if not file.endswith(".wav"): continue
 			wave, sr = librosa.load(path+file, mono=True)
 			mfcc = librosa.feature.mfcc(wave, sr)
-			if target==Target.speaker: label=one_hot_from_item(speaker(file), speakers)
-			elif target==Target.digits:  label=dense_to_one_hot(int(file[0]),10)
-			elif target==Target.first_letter:  label=dense_to_one_hot((ord(file[0]) - 48) % 32,32)
-			elif target == Target.hotword: label = one_hot_word(file, pad_to=max_word_length)  #
-			elif target == Target.word: label=string_to_int_word(file, pad_to=max_word_length)
-				# label = file  # sparse_labels(file, pad_to=20)  # max_output_length
+			if target==Target.direction: label=one_hot_from_item(speaker(file), direction)
 			else: raise Exception("todo : labels for Target!")
 			labels.append(label)
 			# print(np.array(mfcc).shape)
-			mfcc=np.pad(mfcc,((0,0),(0,80-len(mfcc[0]))), mode='constant', constant_values=0)
+			mfcc=np.pad(mfcc,((0,0),(0,20-len(mfcc[0]))), mode='constant', constant_values=0)
 			batch_features.append(np.array(mfcc))
 			if len(batch_features) >= batch_size:
 				# if target == Target.word:  labels = sparse_labels(labels)

@@ -6,5 +6,5 @@ while i<d-0.1:
     wave, sr = librosa.load("go.wav", offset = i, duration = 0.1, mono=True)
     mfcc = librosa.feature.mfcc(wave, sr)
     print '\nNext duration'
-    print mfcc
+    print mfcc.shape
     i = i + 0.1
