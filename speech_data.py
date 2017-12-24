@@ -245,7 +245,7 @@ def mfcc_batch_generator(batch_size=10, source=Source.DIGIT_WAVES, target=Target
 			else: raise Exception("todo : labels for Target!")
 			labels.append(label)
 			# print(np.array(mfcc).shape)
-			mfcc=np.pad(mfcc,((0,0),(0,20-len(mfcc[0]))), mode='constant', constant_values=0)
+			mfcc=np.pad(mfcc,((0,0),(0,80-len(mfcc[0]))), mode='constant', constant_values=0)
 			batch_features.append(np.array(mfcc))
 			if len(batch_features) >= batch_size:
 				# if target == Target.word:  labels = sparse_labels(labels)
@@ -264,7 +264,7 @@ def wave_batch_generator(batch_size=10,source=Source.DIGIT_WAVES,target=Target.d
 	maybe_download(source, DATA_DIR)
 	if target == Target.speaker: speakers=get_speakers()
 	print("testing ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-	print(speakers)
+	print(speakers)	
 	print("testing ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 	batch_waves = []
 	labels = []

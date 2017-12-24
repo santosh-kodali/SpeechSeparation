@@ -13,7 +13,7 @@ training_iters = 300000 #steps
 batch_size = 64
 
 height=20 # mfcc features
-width= 20 # (max) length of utterance
+width= 80 # (max) length of utterance
 classes=4 # direction
 
 batch = word_batch = speech_data.mfcc_batch_generator(batch_size, source=Source.DIGIT_WAVES, target=Target.direction)
