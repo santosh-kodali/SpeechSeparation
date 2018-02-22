@@ -5,28 +5,32 @@ from tflearn.layers.estimator import regression
 import speech_data
 import numpy as np
 from speech_data import Source,Target
-batch_size = 200
+batch_size = 3
 height=20 # mfcc features
 width= 80 # (max) length of utterance
-test_x, test_y = speech_data.mfcc_batch_test_generator(batch_size, source=Source.DIGIT_WAVES, target=Target.direction)
-batch = word_batch = speech_data.mfcc_batch_generator(batch_size, source=Source.DIGIT_WAVES, target=Target.direction)
+test_x, test_y = speech_data.mfcc_batch_test_generator2(batch_size)
+batch = speech_data.mfcc_batch_generator2(batch_size)
 
 #test data here
 X, Y = next(batch)
 
 
-print("batch shape " + str(np.array(X).shape))
+# print("batch shape " + str(np.array(X).shape))
 
-print("batch shape " + str(np.array(test_x).shape))
+# print("batch shape " + str(np.array(test_x).shape))
 
 X = np.array(X).reshape([-1, height, width, 1])
 #Y = np.array(Y).reshape([-1,height*width])
 #test_y = np.array(test_y).reshape([-1,height*width])
 test_x = np.array(test_x).reshape([-1, height, width, 1])
 
-print("batch shape2 " + str(np.array(X).shape))
+print("x " + str(np.array(X).shape))
+print("y "+str(np.array(Y).shape))
 
-print("batch shape2 " + str(np.array(test_x).shape))
+print("testx " + str(np.array(test_x).shape))
+print("testy " + str(np.array(test_y).shape))
+
+
 
 shape=[-1, height, width, 1]
 
@@ -57,7 +61,7 @@ convnet = dropout(convnet, 0.8)
 convnet = fully_connected(convnet, 512, activation='relu')
 convnet = dropout(convnet, 0.8)
 
-convnet = fully_connected(convnet, 4, activation='softmax')
+convnet = fully_connected(convnet, 1600, activation='softmax')
 convnet = regression(convnet, optimizer='adam', learning_rate=0.001, loss='mean_square', name='targets')
 
 model = tflearn.DNN(convnet)

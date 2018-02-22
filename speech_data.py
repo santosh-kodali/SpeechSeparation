@@ -32,6 +32,10 @@ direction_path= "data/dataset/"
 pcm_path = "data/spoken_numbers_pcm/" # 8 bit
 wav_path = "data/spoken_numbers_wav/" # 16 bit s16le
 testpath = "data/dataset/test/"
+full_pathA =  "/media/santosh/Data/speech/data/Full/A/"
+full_pathAB =  "/media/santosh/Data/speech/data/Full/AB/"
+
+
 path = direction_path
 CHUNK = 4096
 test_fraction=0.1 # 10% of data for test / verification
@@ -250,7 +254,7 @@ def mfcc_batch_test_generator(batch_size=10, source=Source.DIGIT_WAVES, target=T
 	return batch_features, labels  # basic_rnn_seq2seq inputs must be a sequence
 	batch_features = []  # Reset for next batch
 	labels = []
-def mfcc_batch_generator(batch_size=10 source=Source.DIGIT_WAVES, target=Target.digits):
+def mfcc_batch_generator(batch_size=10, source=Source.DIGIT_WAVES, target=Target.digits):
 	direction = ['go','left','right','stop']
 
 	batch_features = []
@@ -279,26 +283,30 @@ def mfcc_batch_test_generator2(batch_size=10):
 	batch_features = []
 	labels = []
 	
-	filesin = os.listdir(testpath+AB)
-	filesout = os.listdir(testpath+A)
+	filesin = os.listdir(full_pathAB)
+	filesout = os.listdir(full_pathA)
 	shuffle(filesin)
 	shuffle(filesout)
-	for fileAB in filesout:
-		for fileA in filesin:
+
+	for fileAB in filesin:
+		for fileA in filesout:
+			
 
 			if not fileA.endswith(".wav"): continue
 			if not fileAB.endswith(".wav"): continue
-			if not fileA.split["_"][1] == fileAB.split["_"][1]: continue
-			wave, sr = librosa.load(testpath+fileAB, mono=True)
+			if not fileA.split("_")[1] == fileAB.split("_")[1]: continue
+			
+			wave, sr = librosa.load(full_pathAB+fileAB, mono=True)
 			mfcc = librosa.feature.mfcc(wave, sr)
 			
 			mfcc=np.pad(mfcc,((0,0),(0,80-len(mfcc[0]))), mode='constant', constant_values=0)
 			batch_features.append(np.array(mfcc))
 			
-			wave, sr = librosa.load(testpath+fileA, mono=True)
+			wave, sr = librosa.load(full_pathA+fileA, mono=True)
 			mfcc = librosa.feature.mfcc(wave, sr)
 			
 			mfcc=np.pad(mfcc,((0,0),(0,80-len(mfcc[0]))), mode='constant', constant_values=0)
+			mfcc = mfcc.flatten('F')
 			labels.append(np.array(mfcc))
 			break
 		
@@ -308,27 +316,29 @@ def mfcc_batch_generator2(batch_size=10):
 	batch_features = []
 	labels = []
 	
-	filesin = os.listdir(testpath+AB)
-	filesout = os.listdir(testpath+A)
+	filesin = os.listdir(full_pathAB)
+	filesout = os.listdir(full_pathA)
 	while True:
 		shuffle(filesin)
 		shuffle(filesout)
-		for fileAB in filesout:
-			for fileA in filesin:
+		for fileAB in filesin:
+			for fileA in filesout:
 
 				if not fileA.endswith(".wav"): continue
 				if not fileAB.endswith(".wav"): continue
-				if not fileA.split["_"][1] == fileAB.split["_"][1]: continue
-				wave, sr = librosa.load(testpath+fileAB, mono=True)
+				if not fileA.split("_")[1] == fileAB.split("_")[1]: continue
+				wave, sr = librosa.load(full_pathAB+fileAB, mono=True)
 				mfcc = librosa.feature.mfcc(wave, sr)
 				
 				mfcc=np.pad(mfcc,((0,0),(0,80-len(mfcc[0]))), mode='constant', constant_values=0)
 				batch_features.append(np.array(mfcc))
 				
-				wave, sr = librosa.load(testpath+fileA, mono=True)
+				wave, sr = librosa.load(full_pathA+fileA, mono=True)
 				mfcc = librosa.feature.mfcc(wave, sr)
 				
 				mfcc=np.pad(mfcc,((0,0),(0,80-len(mfcc[0]))), mode='constant', constant_values=0)
+				mfcc = mfcc.flatten('F')
+				print(mfcc.shape)
 				labels.append(np.array(mfcc))
 				if len(batch_features) >= batch_size:
 					yield batch_features, labels  # basic_rnn_seq2seq inputs must be a sequence
