@@ -7,7 +7,7 @@ from scipy.io import wavfile
 from scipy.signal import butter, lfilter
 import scipy.ndimage
 
-mywav = 'orig_48.wav'
+mywav = 'go.wav'
 
 def butter_bandpass(lowcut, highcut, fs, order=5):
     nyq = 0.5 * fs
@@ -365,7 +365,7 @@ shorten_factor = 10 # how much should we compress the x-axis (time)
 #end_freq = 8000 # Hz # What frequency to stop sampling our melS from
 # Grab your wav and filter it
 start_freq = 100
-end_freq = 4000
+end_freq = 6000
 
 rate, data = wavfile.read(mywav)
 data = butter_bandpass_filter(data, lowcut, highcut, rate, order=1)
@@ -387,7 +387,7 @@ mel_filter, mel_inversion_filter = create_mel_filter(fft_size = fft_size,n_freq_
 mel_spec = make_mel(wav_spectrogram, mel_filter, shorten_factor = shorten_factor)
 
 mel_inverted_spectrogram = mel_to_spectrogram(mel_spec, mel_inversion_filter,spec_thresh=spec_thresh,shorten_factor=shorten_factor)
-inverted_mel_audio = invert_pretty_spectrogram(np.transpose(mel_inverted_spectrogram), fft_size = fft_size,step_size = step_size, log = True, n_iter = 10)
+inverted_mel_audio = invert_pretty_spectrogram(np.transpose(mel_inverted_spectrogram), fft_size = fft_size,step_size = step_size, log = True, n_iter = 50)
 print(inverted_mel_audio)
 librosa.output.write_wav("op.wav", inverted_mel_audio, rate, 1)
 #wavfile.write("myout.wav",inverted_mel,rate)
