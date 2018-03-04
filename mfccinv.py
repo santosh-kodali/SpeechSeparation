@@ -9,7 +9,7 @@ import scipy.ndimage
 import soundfile as sf
 
 #names of files to be read and written
-readfile = 'test.flac'
+readfile = 'test1.flac'
 outfile = 'out.wav'
 
 def butter_bandpass(lowcut, highcut, fs, order=5):
@@ -149,8 +149,7 @@ def iterate_invert_spectrogram(X_s, fftsize, step, n_iter=10, verbose=False):
         est = stft(X_t, fftsize=fftsize, step=step, compute_onesided=False)
         phase = est / np.maximum(reg, np.abs(est))
         X_best = X_s * phase[:len(X_s)]
-    X_t = invert_spectrogram(X_best, step, calculate_offset=True,
-                             set_zero_phase=False)
+    X_t = invert_spectrogram(X_best, step, calculate_offset=True,set_zero_phase=False)
     return np.real(X_t)
 
 def invert_spectrogram(X_s, step, calculate_offset=True, set_zero_phase=True):
@@ -197,8 +196,7 @@ def invert_spectrogram(X_s, step, calculate_offset=True, set_zero_phase=True):
                       "This code works best with high overlap - try "
                       "with 75% or greater")
                 offset_size = step
-            offset = xcorr_offset(wave[wave_start:wave_start + offset_size],
-                                  wave_est[est_start:est_start + offset_size])
+            offset = xcorr_offset(wave[wave_start:wave_start + offset_size],wave_est[est_start:est_start + offset_size])
         else:
             offset = 0
         wave[wave_start:wave_end] += win * wave_est[
@@ -360,30 +358,31 @@ fft_size = 2048 # window size for the FFT
 step_size = fft_size/16 # distance to slide along the window (in time)
 spec_thresh = 4 # threshold for spectrograms (lower filters out more noise)
 lowcut = 100 # Hz # Low cut for our butter bandpass filter
-highcut = 4000 # Hz # High cut for our butter bandpass filter
+highcut = 5000 # Hz # High cut for our butter bandpass filter
 # For mels
 n_mel_freq_components = 64 # number of mel frequency channels
 shorten_factor = 10 # how much should we compress the x-axis (time)
-#start_freq = 300 # Hz # What frequency to start sampling our melS from
-#end_freq = 8000 # Hz # What frequency to stop sampling our melS from
+start_freq = 50 # Hz # What frequency to start sampling our melS from
+end_freq = 8000 # Hz # What frequency to stop sampling our melS from
 # Grab your wav and filter it
-start_freq = 50
-end_freq = 10000
+#start_freq = 200
+#end_freq = 8000
 
 #rate, data = wavfile.read(mywav)
 data,rate = sf.read(readfile)
 data = butter_bandpass_filter(data, lowcut, highcut, rate, order=1)
+'''
 # Only use a short clip for our demo
 if np.shape(data)[0]/float(rate) > 10:
     data = data[0:rate*10]
 #print 'Length in time (s): ', np.shape(data)[0]/float(rate)
-
+'''
 # Play the audio
 #IPython.display.Audio(data=data, rate=rate)
 wav_spectrogram = pretty_spectrogram(data.astype('float64'), fft_size = fft_size, step_size = step_size, log = True, thresh = spec_thresh)
-
-recovered_audio_orig = invert_pretty_spectrogram(wav_spectrogram, fft_size = fft_size,step_size = step_size, log = True, n_iter = 10)
+#recovered_audio_orig = invert_pretty_spectrogram(wav_spectrogram, fft_size = fft_size,step_size = step_size, log = True, n_iter = 10)
 #IPython.display.Audio(data=recovered_audio_orig, rate=rate) # play the audio
+#librosa.output.write_wav(outfile, recovered_audio_orig, rate, 1)
 
 # Generate the mel filters
 mel_filter, mel_inversion_filter = create_mel_filter(fft_size = fft_size,n_freq_components = n_mel_freq_components,start_freq = start_freq,end_freq = end_freq)
@@ -391,7 +390,7 @@ mel_filter, mel_inversion_filter = create_mel_filter(fft_size = fft_size,n_freq_
 mel_spec = make_mel(wav_spectrogram, mel_filter, shorten_factor = shorten_factor)
 
 mel_inverted_spectrogram = mel_to_spectrogram(mel_spec, mel_inversion_filter,spec_thresh=spec_thresh,shorten_factor=shorten_factor)
-inverted_mel_audio = invert_pretty_spectrogram(np.transpose(mel_inverted_spectrogram), fft_size = fft_size,step_size = step_size, log = True, n_iter = 25)
+inverted_mel_audio = invert_pretty_spectrogram(np.transpose(mel_inverted_spectrogram), fft_size = fft_size,step_size = step_size, log = True, n_iter = 75)
 print(inverted_mel_audio)
 librosa.output.write_wav(outfile, inverted_mel_audio, rate, 1)
 #wavfile.write("myout.wav",inverted_mel,rate)
