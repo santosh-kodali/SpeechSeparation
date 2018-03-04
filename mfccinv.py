@@ -9,7 +9,7 @@ import scipy.ndimage
 import soundfile as sf
 
 #names of files to be read and written
-readfile = 'test.flac'
+readfile = 'test1.flac'
 outfile = 'out.wav'
 no_of_inter = 100    #No of phase iterations required while inverting
 
