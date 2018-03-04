@@ -1,4 +1,4 @@
-# Packages we're using
+#NOTE: Install pysoundfile package before running
 import numpy as np
 import matplotlib.pyplot as plt
 import copy
@@ -6,8 +6,11 @@ import librosa
 from scipy.io import wavfile
 from scipy.signal import butter, lfilter
 import scipy.ndimage
+import soundfile as sf
 
-mywav = 'go.wav'
+#names of files to be read and written
+readfile = 'test.flac'
+outfile = 'out.wav'
 
 def butter_bandpass(lowcut, highcut, fs, order=5):
     nyq = 0.5 * fs
@@ -364,10 +367,11 @@ shorten_factor = 10 # how much should we compress the x-axis (time)
 #start_freq = 300 # Hz # What frequency to start sampling our melS from
 #end_freq = 8000 # Hz # What frequency to stop sampling our melS from
 # Grab your wav and filter it
-start_freq = 100
-end_freq = 6000
+start_freq = 50
+end_freq = 10000
 
-rate, data = wavfile.read(mywav)
+#rate, data = wavfile.read(mywav)
+data,rate = sf.read(readfile)
 data = butter_bandpass_filter(data, lowcut, highcut, rate, order=1)
 # Only use a short clip for our demo
 if np.shape(data)[0]/float(rate) > 10:
@@ -387,9 +391,9 @@ mel_filter, mel_inversion_filter = create_mel_filter(fft_size = fft_size,n_freq_
 mel_spec = make_mel(wav_spectrogram, mel_filter, shorten_factor = shorten_factor)
 
 mel_inverted_spectrogram = mel_to_spectrogram(mel_spec, mel_inversion_filter,spec_thresh=spec_thresh,shorten_factor=shorten_factor)
-inverted_mel_audio = invert_pretty_spectrogram(np.transpose(mel_inverted_spectrogram), fft_size = fft_size,step_size = step_size, log = True, n_iter = 50)
+inverted_mel_audio = invert_pretty_spectrogram(np.transpose(mel_inverted_spectrogram), fft_size = fft_size,step_size = step_size, log = True, n_iter = 25)
 print(inverted_mel_audio)
-librosa.output.write_wav("op.wav", inverted_mel_audio, rate, 1)
+librosa.output.write_wav(outfile, inverted_mel_audio, rate, 1)
 #wavfile.write("myout.wav",inverted_mel,rate)
 
 #IPython.display.Audio(data=inverted_mel_audio, rate=rate)
