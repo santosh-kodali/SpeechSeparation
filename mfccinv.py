@@ -9,9 +9,23 @@ import scipy.ndimage
 import soundfile as sf
 
 #names of files to be read and written
-readfile = 'test1.flac'
+readfile = 'test.flac'
 outfile = 'out.wav'
+no_of_inter = 100    #No of phase iterations required while inverting
 
+fft_size = 2048 # window size for the FFT
+step_size = fft_size/16 # distance to slide along the window (in time)
+spec_thresh = 4 # threshold for spectrograms (lower filters out more noise)
+lowcut = 100 # Hz # Low cut for our butter bandpass filter
+highcut = 5000 # Hz # High cut for our butter bandpass filter
+
+# For mels
+n_mel_freq_components = 64 # number of mel frequency channels
+shorten_factor = 10 # how much should we compress the x-axis (time)
+start_freq = 50 # Hz # What frequency to start sampling our melS from
+end_freq = 8000 # Hz # What frequency to stop sampling our melS from
+
+#Mostly modified or taken from https://github.com/timsainb/python_spectrograms_and_inversion
 def butter_bandpass(lowcut, highcut, fs, order=5):
     nyq = 0.5 * fs
     low = lowcut / nyq
@@ -23,7 +37,6 @@ def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
     b, a = butter_bandpass(lowcut, highcut, fs, order=order)
     y = lfilter(b, a, data)
     return y
-
 def overlap(X, window_size, window_step):
     """
     Create an overlapped version of X
@@ -61,8 +74,6 @@ def overlap(X, window_size, window_step):
         out[i] = a[start : stop]
 
     return out
-
-
 def stft(X, fftsize=128, step=65, mean_normalize=True, real=False,
          compute_onesided=True):
     """
@@ -105,7 +116,7 @@ def pretty_spectrogram(d,log = True, thresh= 5, fft_size = 512, step_size = 64):
 
     return specgram
 
-# Also mostly modified or taken from https://gist.github.com/kastnerkyle/179d6e9a88202ab0a2fe
+
 def invert_pretty_spectrogram(X_s, log = True, fft_size = 512, step_size = 512/4, n_iter = 10):
 
     if log == True:
@@ -232,55 +243,6 @@ def xcorr_offset(x1, x2):
     offset = corrs.argmax() - len(x1)
     return offset
 
-# def freq_to_mel(f):
-#     return 2595.*np.log10(1+(f/700.))
-# def mel_to_freq(m):
-#     return 700.0*(10.0**(m/2595.0)-1.0)
-
-# def create_mel_filter(fft_size, n_freq_components = 64, start_freq = 300, end_freq = 8000):
-#     """
-#     Creates a filter to convolve with the spectrogram to get out mels
-
-#     """
-#     spec_size = fft_size/2
-#     start_mel = freq_to_mel(start_freq)
-#     end_mel = freq_to_mel(end_freq)
-#     plt_spacing = []
-#     # find our central channels from the spectrogram
-#     for i in range(10000):
-#         y = np.linspace(start_mel, end_mel, num=i, endpoint=False)
-#         logp = mel_to_freq(y)
-#         logp = logp/(rate/2/spec_size)
-#         true_spacing = [int(i)-1 for i in np.ceil(logp)]
-#         plt_spacing_mel = np.unique(true_spacing)
-#         if len(plt_spacing_mel) == n_freq_components:
-#             break
-#     plt_spacing = plt_spacing_mel
-#     if plt_spacing_mel[-1] == spec_size:
-#         plt_spacing_mel[-1] = plt_spacing_mel[-1]-1
-#     # make the filter
-#     mel_filter = np.zeros((int(spec_size),n_freq_components))
-#     # Create Filter
-#     for i in range(len(plt_spacing)):
-#         if i > 0:
-#             if plt_spacing[i-1] < plt_spacing[i] - 1:
-#                 # the first half of the window should start with zero
-#                 mel_filter[plt_spacing[i-1]:plt_spacing[i], i] = np.arange(0,1,1./(plt_spacing[i]-plt_spacing[i-1]))
-#         if i < n_freq_components-1:
-#             if plt_spacing[i+1] > plt_spacing[i]+1:
-#                 mel_filter[plt_spacing[i]:plt_spacing[i+1], i] = np.arange(0,1,1./(plt_spacing[i+1]-plt_spacing[i]))[::-1]
-#         elif plt_spacing[i] < spec_size:
-#             mel_filter[plt_spacing[i]:int(mel_to_freq(end_mel)/(rate/2/spec_size)), i] =  \
-#                 np.arange(0,1,1./(int(mel_to_freq(end_mel)/(rate/2/spec_size))-plt_spacing[i]))[::-1]
-#         mel_filter[plt_spacing[i], i] = 1
-#     # Normalize filter
-#     mel_filter = mel_filter / mel_filter.sum(axis=0)
-#     # Create and normalize inversion filter
-#     mel_inversion_filter = np.transpose(mel_filter) / np.transpose(mel_filter).sum(axis=0)
-#     mel_inversion_filter[np.isnan(mel_inversion_filter)] = 0 # for when a row has a sum of 0
-
-#     return mel_filter, mel_inversion_filter
-
 def make_mel(spectrogram, mel_filter, shorten_factor = 1):
     mel_spec =np.transpose(mel_filter).dot(np.transpose(spectrogram))
     mel_spec = scipy.ndimage.zoom(mel_spec.astype('float32'), [1, 1./shorten_factor]).astype('float16')
@@ -325,13 +287,11 @@ def get_filterbanks(nfilt=20,nfft=512,samplerate=16000,lowfreq=0,highfreq=None):
     """
     highfreq= highfreq or samplerate/2
     assert highfreq <= samplerate/2, "highfreq is greater than samplerate/2"
-
     # compute points evenly spaced in mels
     lowmel = hz2mel(lowfreq)
     highmel = hz2mel(highfreq)
     melpoints = np.linspace(lowmel,highmel,nfilt+2)
-    # our points are in Hz, but we use fft bins, so we have to convert
-    #  from Hz to fft bin number
+    # our points are in Hz, but we use fft bins, so we have to convert from Hz to fft bin number
     bin = np.floor((nfft+1)*mel2hz(melpoints)/samplerate)
 
     fbank = np.zeros([nfilt,nfft//2])
@@ -343,56 +303,29 @@ def get_filterbanks(nfilt=20,nfft=512,samplerate=16000,lowfreq=0,highfreq=None):
     return fbank
 
 def create_mel_filter(fft_size, n_freq_components = 64, start_freq = 300, end_freq = 8000, samplerate=44100):
-    """
-    Creates a filter to convolve with the spectrogram to get out mels
-
-    """
-    mel_inversion_filter = get_filterbanks(nfilt=n_freq_components,
-                                           nfft=fft_size, samplerate=samplerate,
-                                           lowfreq=start_freq, highfreq=end_freq)
+    #Creates a filter to convolve with the spectrogram to get out mels
+    mel_inversion_filter = get_filterbanks(nfilt=n_freq_components,nfft=fft_size, samplerate=samplerate,lowfreq=start_freq, highfreq=end_freq)
     # Normalize filter
     mel_filter = mel_inversion_filter.T / mel_inversion_filter.sum(axis=1)
 
     return mel_filter, mel_inversion_filter
-fft_size = 2048 # window size for the FFT
-step_size = fft_size/16 # distance to slide along the window (in time)
-spec_thresh = 4 # threshold for spectrograms (lower filters out more noise)
-lowcut = 100 # Hz # Low cut for our butter bandpass filter
-highcut = 5000 # Hz # High cut for our butter bandpass filter
-# For mels
-n_mel_freq_components = 64 # number of mel frequency channels
-shorten_factor = 10 # how much should we compress the x-axis (time)
-start_freq = 50 # Hz # What frequency to start sampling our melS from
-end_freq = 8000 # Hz # What frequency to stop sampling our melS from
-# Grab your wav and filter it
-#start_freq = 200
-#end_freq = 8000
 
-#rate, data = wavfile.read(mywav)
+# Grab your wav and filter it
 data,rate = sf.read(readfile)
 data = butter_bandpass_filter(data, lowcut, highcut, rate, order=1)
-'''
-# Only use a short clip for our demo
-if np.shape(data)[0]/float(rate) > 10:
-    data = data[0:rate*10]
-#print 'Length in time (s): ', np.shape(data)[0]/float(rate)
-'''
-# Play the audio
-#IPython.display.Audio(data=data, rate=rate)
+
 wav_spectrogram = pretty_spectrogram(data.astype('float64'), fft_size = fft_size, step_size = step_size, log = True, thresh = spec_thresh)
 #recovered_audio_orig = invert_pretty_spectrogram(wav_spectrogram, fft_size = fft_size,step_size = step_size, log = True, n_iter = 10)
-#IPython.display.Audio(data=recovered_audio_orig, rate=rate) # play the audio
 #librosa.output.write_wav(outfile, recovered_audio_orig, rate, 1)
 
 # Generate the mel filters
 mel_filter, mel_inversion_filter = create_mel_filter(fft_size = fft_size,n_freq_components = n_mel_freq_components,start_freq = start_freq,end_freq = end_freq)
-
 mel_spec = make_mel(wav_spectrogram, mel_filter, shorten_factor = shorten_factor)
 
-mel_inverted_spectrogram = mel_to_spectrogram(mel_spec, mel_inversion_filter,spec_thresh=spec_thresh,shorten_factor=shorten_factor)
-inverted_mel_audio = invert_pretty_spectrogram(np.transpose(mel_inverted_spectrogram), fft_size = fft_size,step_size = step_size, log = True, n_iter = 75)
+'''Replace RHS of below line to new MFCC coeffs'''
+updated_mel_spec = mel_spec 
+
+mel_inverted_spectrogram = mel_to_spectrogram(updated_mel_spec, mel_inversion_filter,spec_thresh=spec_thresh,shorten_factor=shorten_factor)
+inverted_mel_audio = invert_pretty_spectrogram(np.transpose(mel_inverted_spectrogram), fft_size = fft_size,step_size = step_size, log = True, n_iter = no_of_inter)
 print(inverted_mel_audio)
 librosa.output.write_wav(outfile, inverted_mel_audio, rate, 1)
-#wavfile.write("myout.wav",inverted_mel,rate)
-
-#IPython.display.Audio(data=inverted_mel_audio, rate=rate)
