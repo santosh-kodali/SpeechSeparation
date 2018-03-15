@@ -297,6 +297,7 @@ def mfcc_batch_test_generator2(batch_size=10):
 			if not fileA.split("_")[1] == fileAB.split("_")[1]: continue
 			
 			wave, sr = librosa.load(full_pathAB+fileAB, mono=True)
+			print sr
 			mfcc = librosa.feature.mfcc(wave, sr)
 			
 			mfcc=np.pad(mfcc,((0,0),(0,80-len(mfcc[0]))), mode='constant', constant_values=0)
