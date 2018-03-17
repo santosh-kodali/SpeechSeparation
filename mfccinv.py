@@ -9,8 +9,8 @@ import scipy.ndimage
 import soundfile as sf
 
 #names of files to be read and written
-readfile = 'test1.flac'
-outfile = 'out.wav'
+#readfile = 'test1.flac'
+outfile = 'out1.wav'
 no_of_inter = 100    #No of phase iterations required while inverting
 
 fft_size = 2048 # window size for the FFT
@@ -20,7 +20,7 @@ lowcut = 100 # Hz # Low cut for our butter bandpass filter
 highcut = 5000 # Hz # High cut for our butter bandpass filter
 
 # For mels
-n_mel_freq_components = 64 # number of mel frequency channels
+n_mel_freq_components = 80 # number of mel frequency channels
 shorten_factor = 10 # how much should we compress the x-axis (time)
 start_freq = 50 # Hz # What frequency to start sampling our melS from
 end_freq = 8000 # Hz # What frequency to stop sampling our melS from
@@ -310,22 +310,28 @@ def create_mel_filter(fft_size, n_freq_components = 64, start_freq = 300, end_fr
 
     return mel_filter, mel_inversion_filter
 
-# Grab your wav and filter it
-data,rate = sf.read(readfile)
-data = butter_bandpass_filter(data, lowcut, highcut, rate, order=1)
+def createmfcc(readfile):
+    # Grab your wav and filter it
+    data,rate = sf.read(readfile)
+    data = butter_bandpass_filter(data, lowcut, highcut, rate, order=1)
 
-wav_spectrogram = pretty_spectrogram(data.astype('float64'), fft_size = fft_size, step_size = step_size, log = True, thresh = spec_thresh)
-#recovered_audio_orig = invert_pretty_spectrogram(wav_spectrogram, fft_size = fft_size,step_size = step_size, log = True, n_iter = 10)
-#librosa.output.write_wav(outfile, recovered_audio_orig, rate, 1)
+    wav_spectrogram = pretty_spectrogram(data.astype('float64'), fft_size = fft_size, step_size = step_size, log = True, thresh = spec_thresh)
+    #recovered_audio_orig = invert_pretty_spectrogram(wav_spectrogram, fft_size = fft_size,step_size = step_size, log = True, n_iter = 10)
+    #librosa.output.write_wav(outfile, recovered_audio_orig, rate, 1)
 
-# Generate the mel filters
-mel_filter, mel_inversion_filter = create_mel_filter(fft_size = fft_size,n_freq_components = n_mel_freq_components,start_freq = start_freq,end_freq = end_freq)
-mel_spec = make_mel(wav_spectrogram, mel_filter, shorten_factor = shorten_factor)
+    # Generate the mel filters
+    mel_filter, mel_inversion_filter = create_mel_filter(fft_size = fft_size,n_freq_components = n_mel_freq_components,start_freq = start_freq,end_freq = end_freq)
+    mel_spec = make_mel(wav_spectrogram, mel_filter, shorten_factor = shorten_factor)
 
-'''Replace RHS of below line to new MFCC coeffs'''
-updated_mel_spec = mel_spec 
+    return mel_spec, mel_inversion_filter
 
-mel_inverted_spectrogram = mel_to_spectrogram(updated_mel_spec, mel_inversion_filter,spec_thresh=spec_thresh,shorten_factor=shorten_factor)
-inverted_mel_audio = invert_pretty_spectrogram(np.transpose(mel_inverted_spectrogram), fft_size = fft_size,step_size = step_size, log = True, n_iter = no_of_inter)
-print(inverted_mel_audio)
-librosa.output.write_wav(outfile, inverted_mel_audio, rate, 1)
+def inversemfcc(mel_spec, mel_inversion_filter):
+    rate = 22050
+    '''Replace RHS of below line to new MFCC coeffs'''
+    updated_mel_spec = mel_spec 
+
+    mel_inverted_spectrogram = mel_to_spectrogram(updated_mel_spec, mel_inversion_filter,spec_thresh=spec_thresh,shorten_factor=shorten_factor)
+    inverted_mel_audio = invert_pretty_spectrogram(np.transpose(mel_inverted_spectrogram), fft_size = fft_size,step_size = step_size, log = True, n_iter = no_of_inter)
+    print(inverted_mel_audio)
+    librosa.output.write_wav(outfile, inverted_mel_audio, rate, 1)
+    

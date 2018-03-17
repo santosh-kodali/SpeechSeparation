@@ -11,7 +11,7 @@ import wave
 import numpy
 import numpy as np
 import skimage.io  # scikit-image
-
+import mfccinv
 try:
 	import librosa
 except:
@@ -32,8 +32,10 @@ direction_path= "data/dataset/"
 pcm_path = "data/spoken_numbers_pcm/" # 8 bit
 wav_path = "data/spoken_numbers_wav/" # 16 bit s16le
 testpath = "data/dataset/test/"
-full_pathA =  "/media/santosh/Data/speech/data/Full/A/"
+full_pathA =  "/media/santosh/Data/speech/data/A/wavs/"
 full_pathAB =  "/media/santosh/Data/speech/data/Full/AB/"
+full_pathAB_test =  "/media/santosh/Data/speech/data/Full/test/"
+train_path = "/media/santosh/Data/speech/data/train/"
 
 
 path = direction_path
@@ -283,33 +285,39 @@ def mfcc_batch_test_generator2(batch_size=10):
 	batch_features = []
 	labels = []
 	
-	filesin = os.listdir(full_pathAB)
-	filesout = os.listdir(full_pathA)
-	shuffle(filesin)
-	shuffle(filesout)
-
-	for fileAB in filesin:
-		for fileA in filesout:
-			
-
-			if not fileA.endswith(".wav"): continue
-			if not fileAB.endswith(".wav"): continue
-			if not fileA.split("_")[1] == fileAB.split("_")[1]: continue
-			
-			wave, sr = librosa.load(full_pathAB+fileAB, mono=True)
-			print sr
-			mfcc = librosa.feature.mfcc(wave, sr)
-			
-			mfcc=np.pad(mfcc,((0,0),(0,80-len(mfcc[0]))), mode='constant', constant_values=0)
-			batch_features.append(np.array(mfcc))
-			
-			wave, sr = librosa.load(full_pathA+fileA, mono=True)
-			mfcc = librosa.feature.mfcc(wave, sr)
-			
-			mfcc=np.pad(mfcc,((0,0),(0,80-len(mfcc[0]))), mode='constant', constant_values=0)
-			mfcc = mfcc.flatten('F')
-			labels.append(np.array(mfcc))
+	filesin = os.listdir(train_path)
+	#filesout = os.listdir(full_pathA)
+	#shuffle(filesin)
+	#shuffle(filesout)
+	counter =0
+	print "testpath"
+	for file in filesin:
+		if not file.endswith(".npy"): continue
+		#print (file.split('_')[0])
+		if not file.split('_')[0] == 'B': continue
+		num = file.split('_')[1].split('.')[0]
+		#wave, sr = librosa.load(full_pathAB+fileAB, mono=True)
+		#print sr
+		#mfcc = librosa.feature.mfcc(wave, sr)
+		#counter +=1
+		#print "load" + str(counter)
+		#mfcc,inv_filter = mfccinv.createmfcc(full_pathAB_test+fileAB)
+		mfcc = np.load(train_path+ file)
+		mfcc=np.pad(mfcc,((0,0),(0,250-len(mfcc[0]))), mode='constant', constant_values=0)
+		batch_features.append(np.array(mfcc))
+		
+		#wave, sr = librosa.load(full_pathA+fileA, mono=True)
+		#mfcc = librosa.feature.mfcc(wave, sr)
+		#mfcc,inv_filter = mfccinv.createmfcc(full_pathA+fileA)
+		mfcc = np.load(train_path+'A'+str(num)+'.npy')
+		#mfcc = np.load(train_path+ file)
+		mfcc=np.pad(mfcc,((0,0),(0,250-len(mfcc[0]))), mode='constant', constant_values=0)
+		mfcc = mfcc.flatten('F')
+		labels.append(np.array(mfcc))
+		
+		if(len(batch_features)>batch_size):
 			break
+
 		
 	return batch_features, labels  # basic_rnn_seq2seq inputs must be a sequence
 	
@@ -317,35 +325,52 @@ def mfcc_batch_generator2(batch_size=10):
 	batch_features = []
 	labels = []
 	
-	filesin = os.listdir(full_pathAB)
-	filesout = os.listdir(full_pathA)
+	filesin = os.listdir(train_path)
+	#filesout = os.listdir(full_pathA)
 	while True:
-		shuffle(filesin)
-		shuffle(filesout)
-		for fileAB in filesin:
-			for fileA in filesout:
+		#print "1"
 
-				if not fileA.endswith(".wav"): continue
-				if not fileAB.endswith(".wav"): continue
-				if not fileA.split("_")[1] == fileAB.split("_")[1]: continue
-				wave, sr = librosa.load(full_pathAB+fileAB, mono=True)
-				mfcc = librosa.feature.mfcc(wave, sr)
-				
-				mfcc=np.pad(mfcc,((0,0),(0,80-len(mfcc[0]))), mode='constant', constant_values=0)
-				batch_features.append(np.array(mfcc))
-				
-				wave, sr = librosa.load(full_pathA+fileA, mono=True)
-				mfcc = librosa.feature.mfcc(wave, sr)
-				
-				mfcc=np.pad(mfcc,((0,0),(0,80-len(mfcc[0]))), mode='constant', constant_values=0)
-				mfcc = mfcc.flatten('F')
-				print(mfcc.shape)
-				labels.append(np.array(mfcc))
-				if len(batch_features) >= batch_size:
-					yield batch_features, labels  # basic_rnn_seq2seq inputs must be a sequence
-					batch_features = []  # Reset for next batch
-					labels = []
-				break
+		shuffle(filesin)
+		#print "2"
+
+		##shuffle(filesout)
+		#print "3"
+
+		for file in filesin:
+			
+			
+
+			if not file.endswith(".npy"): continue
+			if not file.split('_')[0] == 'B': continue
+			num = file.split('_')[1].split('.')[0]
+			#print(num)
+			#if not fileA.split("_")[1].split(".")[0] == fileAB.split("_")[1]: continue
+			#wave, sr = librosa.load(full_pathAB+fileAB, mono=True)
+			#mfcc = librosa.feature.mfcc(wave, sr)
+			#print "before mfcc"
+
+			#mfcc,inv_filter = mfccinv.createmfcc(full_pathAB+fileAB)
+			#print mfcc.shape
+			#print "inbegin 1"
+			mfcc = np.load(train_path+ file)
+			mfcc=np.pad(mfcc,((0,0),(0,250-len(mfcc[0]))), mode='constant', constant_values=0)
+			batch_features.append(np.array(mfcc))
+			
+			#wave, sr = librosa.load(full_pathA+fileA, mono=True)
+			#mfcc = librosa.feature.mfcc(wave, sr)
+			#mfcc,inv_filter = mfccinv.createmfcc(full_pathA+fileA)
+			#print mfcc.shape
+			mfcc = np.load(train_path+'A'+str(num)+'.npy')
+			#mfcc = np.load(train_path+ file)
+			mfcc=np.pad(mfcc,((0,0),(0,250-len(mfcc[0]))), mode='constant', constant_values=0)
+			mfcc = mfcc.flatten('F')
+			#print(mfcc.shape)
+			labels.append(np.array(mfcc))
+			if len(batch_features) >= batch_size:
+				yield batch_features, labels  # basic_rnn_seq2seq inputs must be a sequence
+				batch_features = []  # Reset for next batch
+				labels = []
+			
 
 
 

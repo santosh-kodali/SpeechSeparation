@@ -1,0 +1,2 @@
+model_checkpoint_path: "/home/santosh/Documents/SpeechSeparation/model.tfl"
+all_model_checkpoint_paths: "/home/santosh/Documents/SpeechSeparation/model.tfl"
